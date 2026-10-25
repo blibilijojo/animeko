@@ -199,6 +199,7 @@ import me.him188.ani.app.videoplayer.player.isMpv
 import me.him188.ani.app.videoplayer.ui.ControllerVisibility
 import me.him188.ani.app.videoplayer.ui.PlayerControllerState
 import me.him188.ani.app.videoplayer.videoenhancement.VideoEnhancementMode
+import me.him188.ani.app.videoplayer.videoenhancement.createFrameInterpolationController
 import me.him188.ani.app.videoplayer.videoenhancement.createVideoEnhancementController
 import me.him188.ani.danmaku.api.DanmakuContent
 import me.him188.ani.danmaku.api.DanmakuEvent
@@ -366,6 +367,15 @@ open class EpisodeViewModel(
     val videoEnhancement = createVideoEnhancementController(
         player,
         settingsRepository.playerKernelConfig.flow,
+        backgroundScope.coroutineContext,
+    )
+
+    /**
+     * 补帧 (帧率提升) 控制器. 与 [videoEnhancement] 操作互不重叠的 mpv 属性, 可以同时开启.
+     * 不支持补帧的平台为 `null`.
+     */
+    val frameInterpolation = createFrameInterpolationController(
+        player,
         backgroundScope.coroutineContext,
     )
 
@@ -1396,9 +1406,12 @@ open class EpisodeViewModel(
 
     init {
         launchInBackground {
-            val defaultMode = settingsRepository.videoScaffoldConfig.flow
-                .first()
-                .videoEnhancementDefaultMode
+            // 补帧与超分读取同一份配置, 两者互不冲突, 可以同时生效.
+            val config = settingsRepository.videoScaffoldConfig.flow.first()
+            config.frameInterpolationDefaultMode.let { mode ->
+                frameInterpolation?.setMode(mode)
+            }
+            val defaultMode = config.videoEnhancementDefaultMode
             videoEnhancement?.setMode(
                 when (defaultMode) {
                     VideoEnhancementDefaultMode.OFF -> VideoEnhancementMode.OFF
@@ -1458,6 +1471,7 @@ open class EpisodeViewModel(
     override fun onCleared() {
         super.onCleared()
         videoEnhancement?.close()
+        frameInterpolation?.close()
         webSessionManager.cancelAutoSolves()
         backgroundScope.launch(NonCancellable + CoroutineName("EpisodeViewModel#onCleared")) {
             fetchPlayState.onClose()

@@ -42,6 +42,12 @@ data class PlayerStatsSnapshot(
     val playbackSpeed: Float?,
     val resolution: String?,
     val frameRate: Float?,
+    /**
+     * mpv 实际输出的帧率 (开启补帧后高于 [frameRate]). 只有 mpv 后端能读到.
+     *
+     * @since 4.9.0
+     */
+    val estimatedFrameRate: Float? = null,
     val videoCodec: String?,
     val videoBitrate: Long?,
     val audioCodec: String?,
@@ -100,7 +106,16 @@ fun PlayerStatsOverlay(
             )
             stats.resolution?.let { PlayerStatsRow(stringResource(Lang.video_player_stats_resolution), it) }
             stats.frameRate?.let {
-                PlayerStatsRow(stringResource(Lang.video_player_stats_frame_rate), "${formatDecimal(it)} fps")
+                val output = stats.estimatedFrameRate
+                    ?.takeIf { outputFps -> outputFps > it * 1.01f } // 只在真的插帧时展示, 避免重复一行
+                if (output != null) {
+                    PlayerStatsRow(
+                        stringResource(Lang.video_player_stats_frame_rate),
+                        "${formatDecimal(it)} → ${formatDecimal(output)} fps",
+                    )
+                } else {
+                    PlayerStatsRow(stringResource(Lang.video_player_stats_frame_rate), "${formatDecimal(it)} fps")
+                }
             }
             stats.videoCodec?.let { PlayerStatsRow(stringResource(Lang.video_player_stats_video_codec), it) }
             formatBitrate(stats.videoBitrate)?.let {

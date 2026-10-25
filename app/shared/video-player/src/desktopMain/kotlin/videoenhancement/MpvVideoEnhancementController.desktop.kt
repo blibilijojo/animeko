@@ -162,7 +162,8 @@ private val anime4kQualityShaderNames = listOf(
     "Anime4K_Upscale_CNN_x2_M.glsl",
 )
 
-private val enhancementPropertyNames = listOf(
+/** 超分控制器管理的 mpv 属性. 与补帧的 `FRAME_INTERPOLATION_MPV_PROPERTIES` 必须零交集. */
+internal val enhancementPropertyNames = listOf(
     "correct-downscaling",
     "linear-downscaling",
     "sigmoid-upscaling",

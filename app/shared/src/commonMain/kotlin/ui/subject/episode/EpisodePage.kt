@@ -1220,6 +1220,7 @@ private fun EpisodeVideo(
             vm.player.features[VideoAspectRatio]?.let { VideoAspectRatioControllerState(it, scope = scope) }
         },
         videoEnhancement = vm.videoEnhancement,
+        frameInterpolation = vm.frameInterpolation,
         leftBottomTips = {
             AniAnimatedVisibility(
                 visible = vm.playerSkipOpEdState.showSkipTips,

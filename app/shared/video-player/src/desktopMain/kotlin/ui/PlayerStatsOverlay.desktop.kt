@@ -54,6 +54,8 @@ private fun MediampPlayer.readMpvPlayerStats(handle: MPVHandle): PlayerStatsSnap
             ?: handle.getPropertyDouble("speed").takeIf { it > 0.0 }?.toFloat(),
         resolution = if (width != null && height != null) "${width}×${height}" else null,
         frameRate = handle.getPropertyDouble("container-fps").takeIf { it > 0.0 }?.toFloat(),
+        // 开启补帧后 mpv 的实际输出帧率 (estimated-vf-fps) 会高于 container-fps
+        estimatedFrameRate = handle.getPropertyDouble("estimated-vf-fps").takeIf { it > 0.0 }?.toFloat(),
         videoCodec = (handle.stringPropertyOrNull("video-codec") ?: handle.stringPropertyOrNull("video-format"))
             ?.let { codec -> if (hwdec != null) "$codec [$hwdec]" else codec },
         videoBitrate = handle.getPropertyInt("video-bitrate").takeIf { it > 0 }?.toLong(),

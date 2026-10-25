@@ -27,29 +27,76 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import me.him188.ani.app.data.models.preference.FrameInterpolationMode
 import me.him188.ani.app.data.models.preference.PlayerKernelConfig
 import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
 import me.him188.ani.app.data.models.preference.parseMpvOptions
 import me.him188.ani.app.data.models.preference.splitMpvOptionLines
 import me.him188.ani.app.ui.foundation.effects.defaultFocus
 import me.him188.ani.app.ui.lang.Lang
+import me.him188.ani.app.ui.lang.settings_player_frame_interpolation_default
+import me.him188.ani.app.ui.lang.settings_player_frame_interpolation_default_description
+import me.him188.ani.app.ui.lang.video_player_frame_interpolation_sharp
+import me.him188.ani.app.ui.lang.video_player_frame_interpolation_smooth
+import me.him188.ani.app.ui.lang.video_player_off
 import me.him188.ani.app.ui.lang.settings_player_mpv_options
 import me.him188.ani.app.ui.lang.settings_player_mpv_options_count
 import me.him188.ani.app.ui.lang.settings_player_mpv_options_description
 import me.him188.ani.app.ui.lang.settings_player_mpv_options_empty
 import me.him188.ani.app.ui.lang.settings_player_mpv_options_placeholder
 import me.him188.ani.app.ui.settings.framework.SettingsState
+import me.him188.ani.app.ui.settings.framework.components.DropdownItem
 import me.him188.ani.app.ui.settings.framework.components.SettingsScope
 import me.him188.ani.app.ui.settings.framework.components.TextFieldDialog
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal actual fun SettingsScope.PlayerGroupPlatform(
-    @Suppress("UNUSED_PARAMETER") videoScaffoldConfig: SettingsState<VideoScaffoldConfig>,
+    videoScaffoldConfig: SettingsState<VideoScaffoldConfig>,
     playerKernelConfig: SettingsState<PlayerKernelConfig>,
 ) {
+    FrameInterpolationDefaultItem(videoScaffoldConfig)
     HorizontalDividerItem()
     MpvOptionsItem(playerKernelConfig)
+}
+
+internal object FrameInterpolationDefaultItemTestTags {
+    const val ITEM = "frame_interpolation_default_item"
+}
+
+/**
+ * 默认超帧率档位. 只有 mpv 内核的桌面平台支持补帧, 所以这一项放在桌面专有的设置分组里.
+ */
+@Composable
+private fun SettingsScope.FrameInterpolationDefaultItem(videoScaffoldConfig: SettingsState<VideoScaffoldConfig>) {
+    val config by videoScaffoldConfig
+    DropdownItem(
+        selected = { config.frameInterpolationDefaultMode },
+        values = {
+            listOf(
+                FrameInterpolationMode.SMOOTH,
+                FrameInterpolationMode.SHARP,
+                FrameInterpolationMode.OFF,
+            )
+        },
+        itemText = {
+            Text(
+                when (it) {
+                    FrameInterpolationMode.OFF -> stringResource(Lang.video_player_off)
+                    FrameInterpolationMode.SMOOTH -> stringResource(Lang.video_player_frame_interpolation_smooth)
+                    FrameInterpolationMode.SHARP -> stringResource(Lang.video_player_frame_interpolation_sharp)
+                },
+            )
+        },
+        onSelect = {
+            videoScaffoldConfig.update(config.copy(frameInterpolationDefaultMode = it))
+        },
+        title = { Text(stringResource(Lang.settings_player_frame_interpolation_default)) },
+        description = {
+            Text(stringResource(Lang.settings_player_frame_interpolation_default_description))
+        },
+        modifier = Modifier.testTag(FrameInterpolationDefaultItemTestTags.ITEM),
+    )
 }
 
 internal object MpvOptionsItemTestTags {

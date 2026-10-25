@@ -106,6 +106,15 @@ data class VideoScaffoldConfig @SerializationOnly constructor(
     /** 进入播放器时使用的默认超分档位. */
     val videoEnhancementDefaultMode: VideoEnhancementDefaultMode = VideoEnhancementDefaultMode.OFF,
     /**
+     * 进入播放器时使用的默认补帧档位.
+     *
+     * 仅在使用 mpv 内核的桌面平台生效, 且与 [videoEnhancementDefaultMode] 可以同时启用.
+     *
+     * @see FrameInterpolationMode
+     * @since 4.9.0
+     */
+    val frameInterpolationDefaultMode: FrameInterpolationMode = FrameInterpolationMode.OFF,
+    /**
      * 在编辑弹幕时暂停视频.
      * @since 3.2.0-beta01
      */
@@ -300,6 +309,7 @@ data class VideoScaffoldConfig @SerializationOnly constructor(
             fullscreenSwitchMode = FullscreenSwitchMode.ONLY_IN_CONTROLLER,
             enableFramePreview = false,
             videoEnhancementDefaultMode = VideoEnhancementDefaultMode.OFF,
+            frameInterpolationDefaultMode = FrameInterpolationMode.OFF,
             pauseVideoOnEditDanmaku = false,
             autoMarkDone = false,
             hideSelectorOnSelect = false,

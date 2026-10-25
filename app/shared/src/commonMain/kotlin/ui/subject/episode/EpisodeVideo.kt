@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PushPin
+import androidx.compose.material.icons.rounded.SlowMotionVideo
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -67,6 +68,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import me.him188.ani.app.data.models.preference.DarkMode
+import me.him188.ani.app.data.models.preference.FrameInterpolationMode
 import me.him188.ani.app.data.models.preference.VideoScaffoldConfig
 import me.him188.ani.app.domain.media.cache.engine.MediaCacheEngineKey
 import me.him188.ani.app.domain.media.player.ChunkState
@@ -108,6 +110,7 @@ import me.him188.ani.app.ui.lang.subject_episode_more_options
 import me.him188.ani.app.ui.lang.subject_episode_preview_mode
 import me.him188.ani.app.ui.lang.subject_episode_select_media_source
 import me.him188.ani.app.ui.lang.video_player_aspect_ratio
+import me.him188.ani.app.ui.lang.video_player_frame_interpolation
 import me.him188.ani.app.ui.lang.video_player_stats_title_hide
 import me.him188.ani.app.ui.lang.video_player_stats_title_show
 import me.him188.ani.app.ui.lang.video_player_video_enhancement
@@ -116,6 +119,7 @@ import me.him188.ani.app.ui.mediafetch.TestMediaSourceResultListPresentation
 import me.him188.ani.app.ui.mediaselect.MediaSelectorMode
 import me.him188.ani.app.ui.mediafetch.rememberTestMediaSelectorState
 import me.him188.ani.app.ui.settings.danmaku.createTestDanmakuRegexFilterState
+import me.him188.ani.app.ui.subject.episode.details.components.FrameInterpolationDropdown
 import me.him188.ani.app.ui.subject.episode.details.components.ShareEpisodeDropdown
 import me.him188.ani.app.ui.subject.episode.details.components.VideoAspectRatioDropdown
 import me.him188.ani.app.ui.subject.episode.details.components.VideoEnhancementDropdown
@@ -177,6 +181,7 @@ import me.him188.ani.app.videoplayer.ui.rememberVideoSideSheetsController
 import me.him188.ani.app.videoplayer.ui.renderAspectRatioMode
 import me.him188.ani.app.videoplayer.ui.top.PlayerTopBar
 import me.him188.ani.app.videoplayer.ui.top.SystemTime
+import me.him188.ani.app.videoplayer.videoenhancement.FrameInterpolationController
 import me.him188.ani.app.videoplayer.videoenhancement.VideoEnhancementController
 import me.him188.ani.app.videoplayer.videoenhancement.VideoEnhancementMode
 import me.him188.ani.utils.platform.annotations.TestOnly
@@ -198,6 +203,7 @@ internal const val TAG_EPISODE_VIDEO_TOP_BAR = "EpisodeVideoTopBar"
 internal const val TAG_DANMAKU_SETTINGS_SHEET = "DanmakuSettingsSheet"
 internal const val TAG_SHOW_MEDIA_SELECTOR = "ShowMediaSelector"
 internal const val TAG_VIDEO_ENHANCEMENT = "VideoEnhancement"
+internal const val TAG_FRAME_INTERPOLATION = "FrameInterpolation"
 internal const val TAG_SHOW_SETTINGS = "ShowSettings"
 internal const val TAG_COLLAPSE_SIDEBAR = "collapseSidebar"
 internal const val TAG_WATCH_TOGETHER_MENU_ITEM = "WatchTogetherMenuItem"
@@ -245,6 +251,7 @@ internal fun EpisodeVideoImpl(
     playbackSpeedControllerState: PlaybackSpeedControllerState?,
     videoAspectRatioControllerState: VideoAspectRatioControllerState?,
     videoEnhancement: VideoEnhancementController? = null,
+    frameInterpolation: FrameInterpolationController? = null,
     leftBottomTips: @Composable () -> Unit,
     fullscreenSwitchButton: @Composable () -> Unit,
     sideSheets: @Composable (controller: VideoSideSheetsController<EpisodeVideoSideSheetPage>) -> Unit,
@@ -317,6 +324,7 @@ internal fun EpisodeVideoImpl(
                 onClickWatchTogether = watchTogetherPlayerController::toggle,
                 playerControllerState = playerControllerState,
                 videoEnhancement = videoEnhancement,
+                frameInterpolation = frameInterpolation,
                 videoAspectRatioControllerState = videoAspectRatioControllerState,
                 sidebarVisible = sidebarVisible,
                 onToggleSidebar = onToggleSidebar,
@@ -692,6 +700,7 @@ private fun EpisodeVideoTopBarActions(
     onClickWatchTogether: () -> Unit,
     playerControllerState: PlayerControllerState,
     videoEnhancement: VideoEnhancementController?,
+    frameInterpolation: FrameInterpolationController?,
     videoAspectRatioControllerState: VideoAspectRatioControllerState?,
     sidebarVisible: Boolean,
     onToggleSidebar: (isCollapsed: Boolean) -> Unit,
@@ -703,11 +712,13 @@ private fun EpisodeVideoTopBarActions(
     var showShareDropdown by rememberSaveable { mutableStateOf(false) }
     var showMoreDropdown by rememberSaveable { mutableStateOf(false) }
     var showVideoEnhancementDropdown by rememberSaveable { mutableStateOf(false) }
+    var showFrameInterpolationDropdown by rememberSaveable { mutableStateOf(false) }
     var showAspectRatioDropdown by rememberSaveable { mutableStateOf(false) }
 
     val dropdownAlwaysOnRequester = rememberAlwaysOnRequester(playerControllerState, "topBarExternalActions")
     val isExternalDropdownVisible =
-        showShareDropdown || showMoreDropdown || showVideoEnhancementDropdown || showAspectRatioDropdown
+        showShareDropdown || showMoreDropdown || showVideoEnhancementDropdown ||
+                showFrameInterpolationDropdown || showAspectRatioDropdown
     val skipDurationSeconds = opEdSkipDuration.inWholeSeconds
 
     val fastForwardSecondsText = stringResource(Lang.subject_episode_fast_forward_seconds, skipDurationSeconds)
@@ -722,6 +733,7 @@ private fun EpisodeVideoTopBarActions(
     val collapseSidebarText = stringResource(Lang.subject_episode_collapse_sidebar)
     val expandSidebarText = stringResource(Lang.subject_episode_expand_sidebar)
     val videoEnhancementTitleText = stringResource(Lang.video_player_video_enhancement)
+    val frameInterpolationTitleText = stringResource(Lang.video_player_frame_interpolation)
     val aspectRatioTitleText = stringResource(Lang.video_player_aspect_ratio)
 
     DisposableEffect(dropdownAlwaysOnRequester, isExternalDropdownVisible) {
@@ -769,6 +781,32 @@ private fun EpisodeVideoTopBarActions(
                     videoEnhancement,
                     showVideoEnhancementDropdown,
                     onDismissRequest = { showVideoEnhancementDropdown = false },
+                )
+            }
+        }
+
+        if (frameInterpolation != null) {
+            Box {
+                val mode by frameInterpolation.mode.collectAsState()
+                IconButton(
+                    onClick = { showFrameInterpolationDropdown = true },
+                    modifier = Modifier.testTag(TAG_FRAME_INTERPOLATION),
+                ) {
+                    Icon(
+                        Icons.Rounded.SlowMotionVideo,
+                        contentDescription = frameInterpolationTitleText,
+                        tint = if (mode != FrameInterpolationMode.OFF) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            LocalContentColor.current
+                        },
+                    )
+                }
+
+                FrameInterpolationDropdown(
+                    frameInterpolation,
+                    showFrameInterpolationDropdown,
+                    onDismissRequest = { showFrameInterpolationDropdown = false },
                 )
             }
         }
@@ -835,6 +873,27 @@ private fun EpisodeVideoTopBarActions(
                     },
                 )
             }
+            if (frameInterpolation != null) {
+                val mode by frameInterpolation.mode.collectAsState()
+                DropdownMenuItem(
+                    text = { Text(frameInterpolationTitleText) },
+                    onClick = {
+                        showMoreDropdown = false
+                        showFrameInterpolationDropdown = true
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Rounded.SlowMotionVideo,
+                            contentDescription = frameInterpolationTitleText,
+                            tint = if (mode != FrameInterpolationMode.OFF) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                LocalContentColor.current
+                            },
+                        )
+                    },
+                )
+            }
             if (videoAspectRatioControllerState != null) {
                 DropdownMenuItem(
                     text = { Text(aspectRatioTitleText) },
@@ -891,6 +950,13 @@ private fun EpisodeVideoTopBarActions(
                 videoEnhancement,
                 showVideoEnhancementDropdown,
                 onDismissRequest = { showVideoEnhancementDropdown = false },
+            )
+        }
+        if (frameInterpolation != null && !expanded) {
+            FrameInterpolationDropdown(
+                frameInterpolation,
+                showFrameInterpolationDropdown,
+                onDismissRequest = { showFrameInterpolationDropdown = false },
             )
         }
         if (videoAspectRatioControllerState != null) {
