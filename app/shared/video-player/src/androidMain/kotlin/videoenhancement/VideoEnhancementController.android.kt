@@ -64,6 +64,10 @@ internal class ExoPlayerVideoEnhancementController(
         videoSize: VideoDimensions?,
         viewportSize: VideoDimensions?,
     ) {
+        // ArtCNN 用 //!COMPUTE 计算着色器, Media3 的 GL effect 管线只有 fragment shader,
+        // 所以移动端把 ArtCNN 档位降级到 Anime4K 的最高质量档.
+        val mode = if (mode.isDesktopOnly) VideoEnhancementMode.QUALITY else mode
+
         if (mode == VideoEnhancementMode.OFF) {
             restore()
             return
@@ -87,6 +91,13 @@ internal class ExoPlayerVideoEnhancementController(
                     VideoEnhancementMode.OFF -> Unit
                     VideoEnhancementMode.PERFORMANCE -> add(Anime4kRestoreEffect)
                     VideoEnhancementMode.QUALITY -> {
+                        add(Anime4kRestoreQualityEffect)
+                        add(Anime4kUpscaleQualityEffect)
+                    }
+                    // 上面已把桌面专有档位降级为 QUALITY, 这里只为穷尽 when.
+                    VideoEnhancementMode.ARTCNN_FAST,
+                    VideoEnhancementMode.ARTCNN_HQ,
+                        -> {
                         add(Anime4kRestoreQualityEffect)
                         add(Anime4kUpscaleQualityEffect)
                     }

@@ -227,6 +227,7 @@ private fun TvSettingsItems.playerPicture() {
     val video = state.video
     choice(
         "enhancement", stringResource(Lang.settings_player_video_enhancement_default), video.videoEnhancementDefaultMode,
+        // ArtCNN 依赖 mpv 的 //!COMPUTE 计算着色器, Android TV 的 ExoPlayer 管线跑不了, 不列出.
         listOf(VideoEnhancementDefaultMode.OFF, VideoEnhancementDefaultMode.PERFORMANCE, VideoEnhancementDefaultMode.QUALITY),
         listOf(stringResource(Lang.video_player_off), stringResource(Lang.video_player_performance), stringResource(Lang.video_player_quality)),
         stringResource(Lang.settings_player_video_enhancement_default_description),

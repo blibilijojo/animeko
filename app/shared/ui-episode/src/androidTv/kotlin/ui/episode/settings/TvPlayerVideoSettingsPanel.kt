@@ -62,18 +62,20 @@ internal fun TvEnhancementSelector(
         VideoEnhancementMode.PERFORMANCE to stringResource(Lang.video_player_performance),
         VideoEnhancementMode.QUALITY to stringResource(Lang.video_player_quality),
     )
+    // ArtCNN 档位依赖 mpv 的 //!COMPUTE 计算着色器, Android TV 的 ExoPlayer 管线跑不了, 不列出.
+    val modes = VideoEnhancementMode.entries.filter { !it.isDesktopOnly }
     val textMeasurer = rememberTextMeasurer()
     val style = MaterialTheme.typography.labelLarge
     val paddingAndCheck = with(LocalDensity.current) { 32.dp.toPx() }
     // Share space by each label's longest word; reserve the check in all modes so selection doesn't resize them.
-    val weights = labels.mapValues { (_, label) ->
-        textMeasurer.measure(label, style, softWrap = false).multiParagraph.minIntrinsicWidth + paddingAndCheck
+    val weights = modes.associateWith { mode ->
+        textMeasurer.measure(labels.getValue(mode), style, softWrap = false).multiParagraph.minIntrinsicWidth + paddingAndCheck
     }
     Row(
         Modifier.fillMaxWidth().height(IntrinsicSize.Min).background(TvOptionDefaults.Raised, CircleShape).padding(4.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        VideoEnhancementMode.entries.forEach { mode ->
+        modes.forEach { mode ->
             Surface(
                 onClick = { onSelect(mode) },
                 modifier = Modifier.weight(weights.getValue(mode)).fillMaxHeight()

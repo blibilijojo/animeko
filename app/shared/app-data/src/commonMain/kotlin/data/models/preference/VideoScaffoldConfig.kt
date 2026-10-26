@@ -41,6 +41,27 @@ enum class VideoEnhancementDefaultMode {
     OFF,
     PERFORMANCE,
     QUALITY,
+
+    /**
+     * ArtCNN C4F16. 只有桌面端 (mpv 内核) 支持.
+     *
+     * @since 6.6
+     */
+    ARTCNN_FAST,
+
+    /**
+     * ArtCNN C4F32. 只有桌面端 (mpv 内核) 支持.
+     *
+     * @since 6.6
+     */
+    ARTCNN_HQ,
+    ;
+
+    /**
+     * ArtCNN 档位依赖 mpv 的 `//!COMPUTE` 计算着色器, 移动端 GL effect 管线跑不了.
+     */
+    val isDesktopOnly: Boolean
+        get() = this == ARTCNN_FAST || this == ARTCNN_HQ
 }
 
 /**

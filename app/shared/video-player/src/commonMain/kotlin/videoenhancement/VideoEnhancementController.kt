@@ -26,8 +26,30 @@ import kotlin.coroutines.CoroutineContext
 
 enum class VideoEnhancementMode {
     OFF,
+
+    /** Anime4K Restore CNN S, 最省性能的官方档. */
     PERFORMANCE,
+
+    /** Anime4K Restore CNN VL + Upscale CNN x2 M, 官方最高质量档. */
     QUALITY,
+
+    /**
+     * ArtCNN C4F16, 轻量 CNN. 用 compute shader, 只有桌面端 mpv 内核能跑.
+     */
+    ARTCNN_FAST,
+
+    /**
+     * ArtCNN C4F32, 高质量 CNN. 用 compute shader, 只有桌面端 mpv 内核能跑.
+     */
+    ARTCNN_HQ,
+    ;
+
+    /**
+     * 是否只有桌面端 mpv 内核支持. ArtCNN 用 `//!COMPUTE` 计算着色器,
+     * Media3 的 GL effect 管线只有 fragment shader, 无法执行.
+     */
+    val isDesktopOnly: Boolean
+        get() = this == ARTCNN_FAST || this == ARTCNN_HQ
 }
 
 interface VideoEnhancementController : AutoCloseable {

@@ -72,6 +72,14 @@ private class MpvVideoEnhancementController(
             VideoEnhancementMode.QUALITY -> anime4kQualityShaderNames.map {
                 VideoEnhancementShaderProvider.getShaderPath(it)
             }
+
+            VideoEnhancementMode.ARTCNN_FAST -> listOf(
+                VideoEnhancementShaderProvider.getShaderPath(artCnnFastShaderName),
+            )
+
+            VideoEnhancementMode.ARTCNN_HQ -> listOf(
+                VideoEnhancementShaderProvider.getShaderPath(artCnnHqShaderName),
+            )
         }
 
         synchronized(lock) {
@@ -84,12 +92,24 @@ private class MpvVideoEnhancementController(
         videoSize: VideoDimensions?,
         viewportSize: VideoDimensions?,
     ): VideoEnhancementMode {
-        val needsUpscale = videoSize != null && viewportSize != null &&
-                minOf(
-                    viewportSize.width.toDouble() / videoSize.width,
-                    viewportSize.height.toDouble() / videoSize.height,
-                ) > 1.0
-        return if (requestedMode != VideoEnhancementMode.OFF && needsUpscale) {
+        val scale = if (videoSize != null && viewportSize != null) {
+            minOf(
+                viewportSize.width.toDouble() / videoSize.width,
+                viewportSize.height.toDouble() / videoSize.height,
+            )
+        } else {
+            0.0
+        }
+        // ArtCNN 的 shader 自带 `//!WHEN OUTPUT.w LUMA.w / 1.3 >`, 放大不足 1.3 倍时 mpv 会跳过它.
+        // 这里用同一个阈值, 免得 UI 显示已启用而实际什么都没做.
+        val minScale = if (requestedMode == VideoEnhancementMode.ARTCNN_FAST ||
+            requestedMode == VideoEnhancementMode.ARTCNN_HQ
+        ) {
+            artCnnMinUpscale
+        } else {
+            1.0
+        }
+        return if (requestedMode != VideoEnhancementMode.OFF && scale > minScale) {
             requestedMode
         } else {
             VideoEnhancementMode.OFF
@@ -107,6 +127,12 @@ private class MpvVideoEnhancementController(
                 VideoEnhancementMode.PERFORMANCE,
                 VideoEnhancementMode.QUALITY,
                     -> clearProperties
+
+                // ArtCNN 自己把 LUMA 放大 2 倍并做抗振铃, 再让 mpv 用 ewa_lanczossharp 重采样
+                // 只会把 CNN 的锐度糊掉. 后续缩放交给 bilinear, 与 mpv 官方 ArtCNN 用法一致.
+                VideoEnhancementMode.ARTCNN_FAST,
+                VideoEnhancementMode.ARTCNN_HQ,
+                    -> artCnnProperties
             }
             properties.forEach { (name, value) ->
                 check(handle.setPropertyString(name, value)) {
@@ -153,6 +179,18 @@ private class MpvVideoEnhancementController(
 
 private const val anime4kRestoreShaderName = "Anime4K_Restore_CNN_S.glsl"
 
+/** ArtCNN C4F16: 12k 参数, 212 KB, 实时无压力. */
+private const val artCnnFastShaderName = "ArtCNN_C4F16.glsl"
+
+/** ArtCNN C4F32: 48k 参数, 743 KB, 明显更锐利也更吃显卡. */
+private const val artCnnHqShaderName = "ArtCNN_C4F32.glsl"
+
+/**
+ * ArtCNN 的 shader 首行条件 `//!WHEN OUTPUT.w LUMA.w / 1.3 > OUTPUT.h LUMA.h / 1.3 > *`
+ * 要求放大至少 1.3 倍, 否则 libplacebo 直接跳过整个 hook. 控制器用同一阈值.
+ */
+private const val artCnnMinUpscale = 1.3
+
 private val anime4kQualityShaderNames = listOf(
     "Anime4K_Clamp_Highlights.glsl",
     "Anime4K_Restore_CNN_VL.glsl",
@@ -196,3 +234,27 @@ private val fullClearProperties = mapOf(
 )
 
 private val windowsLiteClearProperties = fullClearProperties + ("deband" to "no")
+
+/**
+ * ArtCNN 档位的 mpv 属性.
+ *
+ * ArtCNN 只对 LUMA 做 2x 上采样 (最后 Depth-To-Space 输出 `LUMA.w 2.0 *`), 自带 `//!WHEN` 门槛,
+ * 并已经包含抗振铃和 sigmoid 上升沿. 因此后续的缩放/振铃交给 bilinear 收尾即可,
+ * 避免 ewa_lanczossharp 在 CNN 输出上再做一次重采样把细节糊掉.
+ * 亮度去色带 (`deband`) 仍然关掉, 与 Windows 的轻量档保持一致.
+ */
+internal val artCnnProperties = mapOf(
+    "correct-downscaling" to "no",
+    "linear-downscaling" to "yes",
+    "sigmoid-upscaling" to "no",
+    "scale" to "bilinear",
+    "dscale" to "bilinear",
+    "cscale" to "bilinear",
+    "scale-antiring" to "0.0",
+    "dscale-antiring" to "0.0",
+    "deband" to "no",
+    "deband-iterations" to "1",
+    "deband-threshold" to "32",
+    "deband-range" to "16",
+    "deband-grain" to "0",
+)

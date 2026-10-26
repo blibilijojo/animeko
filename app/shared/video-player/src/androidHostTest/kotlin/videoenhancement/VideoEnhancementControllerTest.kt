@@ -83,4 +83,31 @@ class VideoEnhancementControllerTest {
         assertEquals(Size(1080, 608), lanczosSharpOutputSize(1920, 1080, VideoDimensions(1080, 608)))
         assertEquals(Size(1280, 720), lanczosSharpOutputSize(1280, 720, viewport = null))
     }
+
+    /**
+     * ArtCNN 用 `//!COMPUTE` 计算着色器, Media3 的 GL effect 管线只有 fragment shader, 跑不了.
+     * 移动端必须把这两个档位降级到 Anime4K 最高质量档, 而不是把空列表交给 ExoPlayer.
+     */
+    @Test
+    fun desktopOnlyModesFallBackToQuality() = runTest {
+        val player = TestMediampPlayer(backgroundScope.coroutineContext)
+        val effects = mutableListOf<List<Effect>>()
+        val controller = ExoPlayerVideoEnhancementController(
+            player, { effects.add(it) }, flowOf(false), backgroundScope.coroutineContext,
+        )
+        try {
+            controller.setViewportSize(1920, 1080)
+            controller.setMode(VideoEnhancementMode.ARTCNN_HQ)
+            runCurrent()
+            assertEquals(1, effects.size)
+            assertEquals(3, effects.single().size, "ArtCNN HQ must degrade to the two Anime4K quality effects plus the scaler")
+
+            controller.setMode(VideoEnhancementMode.ARTCNN_FAST)
+            runCurrent()
+            assertEquals(1, effects.size, "Both ArtCNN modes degrade to the same effect list")
+        } finally {
+            controller.close()
+            player.close()
+        }
+    }
 }

@@ -882,6 +882,8 @@
     <string name="video_player_on">开启</string>
     <string name="video_player_performance">性能优先</string>
     <string name="video_player_quality">最高质量</string>
+    <string name="video_player_artcnn_fast">ArtCNN 快速（仅桌面端）</string>
+    <string name="video_player_artcnn_hq">ArtCNN 高质量（仅桌面端）</string>
     <string name="video_player_frame_interpolation">超帧率</string>
     <string name="video_player_frame_interpolation_smooth">平滑</string>
     <string name="video_player_frame_interpolation_sharp">锐利</string>

@@ -41,7 +41,9 @@ private class IosVideoEnhancementController(
     }
 
     override suspend fun apply(mode: VideoEnhancementMode, videoSize: VideoDimensions?, viewportSize: VideoDimensions?) {
-        surfaceMode.value = mode
+        // ArtCNN 用 //!COMPUTE 计算着色器, iOS 的 Metal 渲染器只实现了 Anime4K 的 fragment 管线,
+        // 所以把 ArtCNN 档位降级到 Anime4K 最高质量档.
+        surfaceMode.value = if (mode.isDesktopOnly) VideoEnhancementMode.QUALITY else mode
     }
 
     override fun restore() {

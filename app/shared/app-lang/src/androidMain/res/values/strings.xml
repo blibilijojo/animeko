@@ -842,6 +842,8 @@
     <string name="video_player_on">On</string>
     <string name="video_player_performance">Prioritize performance</string>
     <string name="video_player_quality">Highest quality</string>
+    <string name="video_player_artcnn_fast">ArtCNN fast (desktop only)</string>
+    <string name="video_player_artcnn_hq">ArtCNN HQ (desktop only)</string>
     <string name="video_player_frame_interpolation">Frame interpolation</string>
     <string name="video_player_frame_interpolation_smooth">Smooth</string>
     <string name="video_player_frame_interpolation_sharp">Sharp</string>

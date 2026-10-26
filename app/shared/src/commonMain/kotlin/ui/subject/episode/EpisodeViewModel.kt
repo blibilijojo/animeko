@@ -1417,6 +1417,8 @@ open class EpisodeViewModel(
                     VideoEnhancementDefaultMode.OFF -> VideoEnhancementMode.OFF
                     VideoEnhancementDefaultMode.PERFORMANCE -> VideoEnhancementMode.PERFORMANCE
                     VideoEnhancementDefaultMode.QUALITY -> VideoEnhancementMode.QUALITY
+                    VideoEnhancementDefaultMode.ARTCNN_FAST -> VideoEnhancementMode.ARTCNN_FAST
+                    VideoEnhancementDefaultMode.ARTCNN_HQ -> VideoEnhancementMode.ARTCNN_HQ
                 },
             )
         }

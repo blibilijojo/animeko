@@ -19,13 +19,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import me.him188.ani.app.ui.foundation.LocalPlatform
 import me.him188.ani.app.ui.lang.Lang
+import me.him188.ani.app.ui.lang.video_player_artcnn_fast
+import me.him188.ani.app.ui.lang.video_player_artcnn_hq
 import me.him188.ani.app.ui.lang.video_player_off
 import me.him188.ani.app.ui.lang.video_player_performance
 import me.him188.ani.app.ui.lang.video_player_quality
 import me.him188.ani.app.ui.lang.video_player_video_enhancement
 import me.him188.ani.app.videoplayer.videoenhancement.VideoEnhancementController
 import me.him188.ani.app.videoplayer.videoenhancement.VideoEnhancementMode
+import me.him188.ani.utils.platform.isDesktop
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -38,7 +42,11 @@ fun VideoEnhancementDropdown(
     val title = stringResource(Lang.video_player_video_enhancement)
     val performanceText = stringResource(Lang.video_player_performance)
     val qualityText = stringResource(Lang.video_player_quality)
+    val artCnnFastText = stringResource(Lang.video_player_artcnn_fast)
+    val artCnnHqText = stringResource(Lang.video_player_artcnn_hq)
     val offText = stringResource(Lang.video_player_off)
+    // ArtCNN 用 //!COMPUTE, 只有桌面端 mpv 内核能跑; 移动端不显示这两个档位.
+    val showDesktopOnlyModes = LocalPlatform.current.isDesktop()
 
     DropdownMenu(
         expanded = showDropdown,
@@ -50,26 +58,31 @@ fun VideoEnhancementDropdown(
             style = MaterialTheme.typography.titleSmall,
         )
         listOf(
-            VideoEnhancementMode.PERFORMANCE,
+            VideoEnhancementMode.ARTCNN_HQ,
+            VideoEnhancementMode.ARTCNN_FAST,
             VideoEnhancementMode.QUALITY,
+            VideoEnhancementMode.PERFORMANCE,
             VideoEnhancementMode.OFF,
-        ).forEach { item ->
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        when (item) {
-                            VideoEnhancementMode.OFF -> offText
-                            VideoEnhancementMode.PERFORMANCE -> performanceText
-                            VideoEnhancementMode.QUALITY -> qualityText
-                        },
-                    )
-                },
-                onClick = {
-                    videoEnhancement.setMode(item)
-                    onDismissRequest()
-                },
-                enabled = item != mode,
-            )
-        }
+        ).filter { showDesktopOnlyModes || !it.isDesktopOnly }
+            .forEach { item ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            when (item) {
+                                VideoEnhancementMode.OFF -> offText
+                                VideoEnhancementMode.PERFORMANCE -> performanceText
+                                VideoEnhancementMode.QUALITY -> qualityText
+                                VideoEnhancementMode.ARTCNN_FAST -> artCnnFastText
+                                VideoEnhancementMode.ARTCNN_HQ -> artCnnHqText
+                            },
+                        )
+                    },
+                    onClick = {
+                        videoEnhancement.setMode(item)
+                        onDismissRequest()
+                    },
+                    enabled = item != mode,
+                )
+            }
     }
 }
